@@ -1,12 +1,15 @@
 package com.example.cs441_4;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.Button;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -68,6 +71,9 @@ public class FullscreenActivity extends AppCompatActivity {
             hide();
         }
     };
+    Button change_button;
+
+
     /**
      * Touch listener to use for in-layout UI controls to delay hiding the
      * system UI. This is to prevent the jarring behavior of controls going away
@@ -106,7 +112,18 @@ public class FullscreenActivity extends AppCompatActivity {
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
         findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+        change_button = findViewById(R.id.dummy_button);
+        change_button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) {
+                //add
+                Intent myIntent = new Intent(FullscreenActivity.this, ZoomActivity.class);
+                myIntent.putExtra("key","HEY");
+                FullscreenActivity.this.startActivity(myIntent);
+            }
+        });
     }
+
+
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
