@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ZoomActivity">
+    android:background="#111111"
+    tools:context=".ZoomActivity"
+    android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
 
 </android.support.constraint.ConstraintLayout>
