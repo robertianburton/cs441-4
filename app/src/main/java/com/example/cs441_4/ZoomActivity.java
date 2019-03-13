@@ -49,7 +49,7 @@ public class ZoomActivity extends Activity {
 
     }
 
-    @Override
+    /*@Override
     public boolean onTouchEvent(MotionEvent event) {
         int x = (int) event.getX();
         int y = (int) event.getY();
@@ -63,7 +63,7 @@ public class ZoomActivity extends Activity {
         point.y = (int)event.getY();
         //invalidate();
         return true;
-    }
+    }*/
 
 
 

@@ -1,13 +1,18 @@
 package com.example.cs441_4;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
+import android.view.Display;
+import android.view.MotionEvent;
 import android.view.View;
 
 /**
@@ -22,6 +27,14 @@ public class MyView extends View {
     private TextPaint mTextPaint;
     private float mTextWidth;
     private float mTextHeight;
+    Paint graphPaint = new Paint();
+
+
+    DisplayMetrics displayMetrics;
+    int ImageHeight;
+    int ImageWidth;
+    float[][] results;
+
 
     public MyView(Context context) {
         super(context);
@@ -39,52 +52,26 @@ public class MyView extends View {
     }
 
     private void init(AttributeSet attrs, int defStyle) {
-        // Load attributes
-        final TypedArray a = getContext().obtainStyledAttributes(
-                attrs, R.styleable.MyView, defStyle, 0);
 
-        /*mExampleString = a.getString(
-                R.styleable.MyView_exampleString);*/
-        mExampleString = "lol";
-        mExampleColor = a.getColor(
-                R.styleable.MyView_exampleColor,
-                mExampleColor);
-        // Use getDimensionPixelSize or getDimensionPixelOffset when dealing with
-        // values that should fall on pixel boundaries.
-        mExampleDimension = a.getDimension(
-                R.styleable.MyView_exampleDimension,
-                mExampleDimension);
-
-        if (a.hasValue(R.styleable.MyView_exampleDrawable)) {
-            mExampleDrawable = a.getDrawable(
-                    R.styleable.MyView_exampleDrawable);
-            mExampleDrawable.setCallback(this);
+        graphPaint.setAntiAlias(true);
+        graphPaint.setStrokeWidth(1.0f);
+        for(int i = 0; i < ImageHeight; i++) {
+            for(int j = 0; j < ImageWidth; j++) {
+                results[i][j] = 0.4f;
+            }
         }
 
-        a.recycle();
-
-        // Set up a default TextPaint object
-        mTextPaint = new TextPaint();
-        mTextPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
-        mTextPaint.setTextAlign(Paint.Align.LEFT);
-
-        // Update TextPaint and text measurements from attributes
-        invalidateTextPaintAndMeasurements();
-    }
-
-    private void invalidateTextPaintAndMeasurements() {
-        mTextPaint.setTextSize(mExampleDimension);
-        mTextPaint.setColor(mExampleColor);
-        mTextWidth = mTextPaint.measureText(mExampleString);
-
-        Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
-        mTextHeight = fontMetrics.bottom;
+        displayMetrics = new DisplayMetrics();
+        ((Activity) getContext()).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        ImageHeight = displayMetrics.heightPixels;
+        ImageWidth = displayMetrics.widthPixels;
+        results = new float[ImageHeight][ImageWidth];
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawColor(0);
+        canvas.drawColor(Color.argb(255,0,255,0));
         // TODO: consider storing these as member variables to reduce
         // allocations per draw cycle.
         int paddingLeft = getPaddingLeft();
@@ -95,96 +82,74 @@ public class MyView extends View {
         int contentWidth = getWidth() - paddingLeft - paddingRight;
         int contentHeight = getHeight() - paddingTop - paddingBottom;
 
-        // Draw the text.
-        canvas.drawText(mExampleString,
-                paddingLeft + (contentWidth - mTextWidth) / 2,
-                paddingTop + (contentHeight + mTextHeight) / 2,
-                mTextPaint);
+        for(int i = 0; i < ImageHeight; i++) {
+            for(int j = 0; j < ImageWidth; j++) {
+                //float[] hsv = new float[]{(float)i/1080.0f*360,(float)j/1920.0f,1.0f};
+                float[] hsv = new float[]{results[i][j]*330,1.0f,1.0f};
+                /*if(results[i][j]==1f) {
+                    hsv = new float[]{results[i][j]*330,1.0f,1f};
+                }*/
+                graphPaint.setColor(Color.HSVToColor(hsv));
+                canvas.drawPoint(i,j,graphPaint);
 
-        // Draw the example drawable on top of the text.
-        if (mExampleDrawable != null) {
-            mExampleDrawable.setBounds(paddingLeft, paddingTop,
-                    paddingLeft + contentWidth, paddingTop + contentHeight);
-            mExampleDrawable.draw(canvas);
+            }
         }
     }
 
-    /**
-     * Gets the example string attribute value.
-     *
-     * @return The example string attribute value.
-     */
-    public String getExampleString() {
-        return mExampleString;
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int px = (int) event.getX();
+        int py = (int) event.getY();
+
+        if(event.getAction() == MotionEvent.ACTION_UP) {
+            System.out.println("Touch at "+px+","+py);
+        }
+
+        Point point = new Point();
+        point.x = (int)event.getX();
+        point.y = (int)event.getY();
+
+
+
+        double MinRe = -2.0;
+        double MaxRe = 1.0;
+        double MinIm = -1.2;
+        double MaxIm = MinIm+(MaxRe-MinRe)*ImageHeight/ImageWidth;
+        double Re_factor = (MaxRe-MinRe)/(ImageWidth-1);
+        double Im_factor = (MaxIm-MinIm)/(ImageHeight-1);
+        int MaxIterations = 40;
+
+        System.out.println("Calculations Starting");
+        for(int y=0; y<ImageWidth; ++y)
+        {
+            double c_im = MaxIm - y*Im_factor;
+            for(int x=0; x<ImageHeight; ++x)
+            {
+                double c_re = MinRe + x*Re_factor;
+
+                double Z_re = c_re, Z_im = c_im;
+                boolean isInside = true;
+                for(int n=0; n<MaxIterations; ++n)
+                {
+                    double Z_re2 = Z_re*Z_re, Z_im2 = Z_im*Z_im;
+                    if(Z_re2 + Z_im2 > 4)
+                    {
+                        results[x][y]=(float)n/(float)MaxIterations;
+                        isInside = false;
+                        break;
+                    }
+                    Z_im = 2*Z_re*Z_im + c_im;
+                    Z_re = Z_re2 - Z_im2 + c_re;
+                }
+                if(isInside) {
+                    results[x][y]=1f;
+                }
+            }
+        }
+        System.out.println("Calculations Ending");
+        invalidate();
+        return true;
     }
 
-    /**
-     * Sets the view's example string attribute value. In the example view, this string
-     * is the text to draw.
-     *
-     * @param exampleString The example string attribute value to use.
-     */
-    public void setExampleString(String exampleString) {
-        mExampleString = exampleString;
-        invalidateTextPaintAndMeasurements();
-    }
 
-    /**
-     * Gets the example color attribute value.
-     *
-     * @return The example color attribute value.
-     */
-    public int getExampleColor() {
-        return mExampleColor;
-    }
-
-    /**
-     * Sets the view's example color attribute value. In the example view, this color
-     * is the font color.
-     *
-     * @param exampleColor The example color attribute value to use.
-     */
-    public void setExampleColor(int exampleColor) {
-        mExampleColor = exampleColor;
-        invalidateTextPaintAndMeasurements();
-    }
-
-    /**
-     * Gets the example dimension attribute value.
-     *
-     * @return The example dimension attribute value.
-     */
-    public float getExampleDimension() {
-        return mExampleDimension;
-    }
-
-    /**
-     * Sets the view's example dimension attribute value. In the example view, this dimension
-     * is the font size.
-     *
-     * @param exampleDimension The example dimension attribute value to use.
-     */
-    public void setExampleDimension(float exampleDimension) {
-        mExampleDimension = exampleDimension;
-        invalidateTextPaintAndMeasurements();
-    }
-
-    /**
-     * Gets the example drawable attribute value.
-     *
-     * @return The example drawable attribute value.
-     */
-    public Drawable getExampleDrawable() {
-        return mExampleDrawable;
-    }
-
-    /**
-     * Sets the view's example drawable attribute value. In the example view, this drawable is
-     * drawn above the text.
-     *
-     * @param exampleDrawable The example drawable attribute value to use.
-     */
-    public void setExampleDrawable(Drawable exampleDrawable) {
-        mExampleDrawable = exampleDrawable;
-    }
 }
