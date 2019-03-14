@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.FloatMath;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
@@ -91,7 +92,6 @@ public class MyView extends View {
                 }*/
                 graphPaint.setColor(Color.HSVToColor(hsv));
                 canvas.drawPoint(i,j,graphPaint);
-
             }
         }
     }
@@ -109,15 +109,13 @@ public class MyView extends View {
         point.x = (int)event.getX();
         point.y = (int)event.getY();
 
-
-
         double MinRe = -2.0;
         double MaxRe = 1.0;
         double MinIm = -1.2;
         double MaxIm = MinIm+(MaxRe-MinRe)*ImageHeight/ImageWidth;
         double Re_factor = (MaxRe-MinRe)/(ImageWidth-1);
         double Im_factor = (MaxIm-MinIm)/(ImageHeight-1);
-        int MaxIterations = 40;
+        int MaxIterations = 200;
 
         System.out.println("Calculations Starting");
         for(int y=0; y<ImageWidth; ++y)
@@ -134,7 +132,7 @@ public class MyView extends View {
                     double Z_re2 = Z_re*Z_re, Z_im2 = Z_im*Z_im;
                     if(Z_re2 + Z_im2 > 4)
                     {
-                        results[x][y]=(float)n/(float)MaxIterations;
+                        results[x][y] = (float)Math.sqrt((float)n/(float)MaxIterations);
                         isInside = false;
                         break;
                     }
