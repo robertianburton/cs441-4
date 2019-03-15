@@ -72,7 +72,7 @@ public class MyView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawColor(Color.argb(255,0,255,0));
+        //canvas.drawColor(Color.argb(255,0,255,0));
         // TODO: consider storing these as member variables to reduce
         // allocations per draw cycle.
         int paddingLeft = getPaddingLeft();
@@ -90,6 +90,9 @@ public class MyView extends View {
                 /*if(results[i][j]==1f) {
                     hsv = new float[]{results[i][j]*330,1.0f,1f};
                 }*/
+                if(i%100==0 && j%100==0) {
+                    System.out.println(i+","+j+" is "+results[i][j]);
+                }
                 graphPaint.setColor(Color.HSVToColor(hsv));
                 canvas.drawPoint(i,j,graphPaint);
             }
@@ -132,7 +135,12 @@ public class MyView extends View {
                     double Z_re2 = Z_re*Z_re, Z_im2 = Z_im*Z_im;
                     if(Z_re2 + Z_im2 > 4)
                     {
+
                         results[x][y] = (float)Math.sqrt((float)n/(float)MaxIterations);
+                        if(x%100==0 && y%100==0) {
+                            System.out.println(x+","+y+" is "+results[x][y]+" done by "+Z_re2+" and "+Z_im2);
+                            results[x][y] =0.1f;
+                        }
                         isInside = false;
                         break;
                     }
@@ -145,6 +153,8 @@ public class MyView extends View {
             }
         }
         System.out.println("Calculations Ending");
+        System.out.println("ImageWidth: " + ImageWidth);
+        System.out.println("ImageHeight: " + ImageHeight);
         invalidate();
         return true;
     }
