@@ -3,23 +3,30 @@ package com.example.cs441_4;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
+import android.media.Image;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.FloatMath;
+import android.util.Log;
+import android.util.TimingLogger;
 import android.view.Display;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+
+import java.util.ArrayList;
 
 /**
  * TODO: document your custom view class.
  */
-public class MyView extends View {
+public class MyView extends View implements GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
     private String mExampleString = "lol"; // TODO: use a default from R.string...
     private int mExampleColor = Color.RED; // TODO: use a default from R.color...
     private float mExampleDimension = 0; // TODO: use a default from R.dimen...
@@ -29,12 +36,21 @@ public class MyView extends View {
     private float mTextWidth;
     private float mTextHeight;
     Paint graphPaint = new Paint();
-
+    TimingLogger timings = new TimingLogger("MyTag", "methodA");
+    Bitmap frame = Bitmap.createBitmap(1080,1920,Bitmap.Config.ARGB_8888);
 
     DisplayMetrics displayMetrics;
     int ImageHeight;
     int ImageWidth;
-    float[][] results;
+    int[][] results;
+    int MaxIterations = 500;
+    ArrayList<Integer> colors;
+    double ZoomLevel = 1;
+    double OffsetX = 0.0;
+    double OffsetY = 0.0;
+    String DEBUG_TAG = "whatever";
+    int ButtonSize = 200;
+
 
 
     public MyView(Context context) {
@@ -56,9 +72,10 @@ public class MyView extends View {
 
         graphPaint.setAntiAlias(true);
         graphPaint.setStrokeWidth(1.0f);
+        graphPaint.setColor(Color.argb(100,255,255,255));
         for(int i = 0; i < ImageHeight; i++) {
             for(int j = 0; j < ImageWidth; j++) {
-                results[i][j] = 0.4f;
+                results[i][j] = 0;
             }
         }
 
@@ -66,67 +83,147 @@ public class MyView extends View {
         ((Activity) getContext()).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         ImageHeight = displayMetrics.heightPixels;
         ImageWidth = displayMetrics.widthPixels;
-        results = new float[ImageHeight][ImageWidth];
+        results = new int[ImageWidth][ImageHeight];
+        timings.reset();
+
+        colors = new ArrayList<>();
+        float[] hsv = new float[]{0f,1.0f,1.0f};
+
+        for(int i = 0; i < MaxIterations; i++) {
+            hsv[0] = ((float)Math.cbrt(((float)i) / (float)MaxIterations) * 3600.0f)%360 ;
+            colors.add(Color.HSVToColor(hsv));
+        }
+
+        createBitmap();
+        invalidate();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        //canvas.drawColor(Color.argb(255,0,255,0));
-        // TODO: consider storing these as member variables to reduce
-        // allocations per draw cycle.
-        int paddingLeft = getPaddingLeft();
-        int paddingTop = getPaddingTop();
-        int paddingRight = getPaddingRight();
-        int paddingBottom = getPaddingBottom();
 
-        int contentWidth = getWidth() - paddingLeft - paddingRight;
-        int contentHeight = getHeight() - paddingTop - paddingBottom;
+        canvas.drawBitmap(frame, 0, 0, null);
+        canvas.drawRect(0,ImageHeight-ButtonSize, ButtonSize, ImageHeight, graphPaint);
+        canvas.drawRect(ImageWidth-ButtonSize,ImageHeight-ButtonSize, ImageWidth, ImageHeight, graphPaint);
 
-        for(int i = 0; i < ImageHeight; i++) {
-            for(int j = 0; j < ImageWidth; j++) {
-                //float[] hsv = new float[]{(float)i/1080.0f*360,(float)j/1920.0f,1.0f};
-                float[] hsv = new float[]{results[i][j]*330,1.0f,1.0f};
-                /*if(results[i][j]==1f) {
-                    hsv = new float[]{results[i][j]*330,1.0f,1f};
-                }*/
-                if(i%100==0 && j%100==0) {
-                    System.out.println(i+","+j+" is "+results[i][j]);
-                }
-                graphPaint.setColor(Color.HSVToColor(hsv));
-                canvas.drawPoint(i,j,graphPaint);
-            }
-        }
+        Paint textPaint = new Paint();
+        textPaint.setColor(Color.argb(170,0,0,0));
+        textPaint.setTextSize(ButtonSize);
+        canvas.drawText("+", ImageWidth-(int)(ButtonSize*0.75), ImageHeight-(int)(ButtonSize*0.18), textPaint);
+        canvas.drawText("-", (int)(ButtonSize*0.35), ImageHeight-(int)(ButtonSize*0.18), textPaint);
+
+        Log.d("Test","More Test");
+    }
+
+
+
+    @Override
+    public boolean onDown(MotionEvent event) {
+        Log.d(DEBUG_TAG,"onDown: " + event.toString());
+        return true;
+    }
+
+    @Override
+    public boolean onFling(MotionEvent event1, MotionEvent event2,
+                           float velocityX, float velocityY) {
+        Log.d(DEBUG_TAG, "onFling: " + event1.toString() + event2.toString());
+        return true;
+    }
+
+    @Override
+    public void onLongPress(MotionEvent event) {
+        Log.d(DEBUG_TAG, "onLongPress: " + event.toString());
+    }
+
+    @Override
+    public boolean onScroll(MotionEvent event1, MotionEvent event2, float distanceX,
+                            float distanceY) {
+        Log.d(DEBUG_TAG, "onScroll: " + event1.toString() + event2.toString());
+        return true;
+    }
+
+    @Override
+    public void onShowPress(MotionEvent event) {
+        Log.d(DEBUG_TAG, "onShowPress: " + event.toString());
+    }
+
+    @Override
+    public boolean onSingleTapUp(MotionEvent event) {
+        Log.d(DEBUG_TAG, "onSingleTapUp: " + event.toString());
+        return true;
+    }
+
+    @Override
+    public boolean onDoubleTap(MotionEvent event) {
+        Log.d(DEBUG_TAG, "onDoubleTap: " + event.toString());
+        System.out.println("Double tappp");
+        return false;
+    }
+
+    @Override
+    public boolean onDoubleTapEvent(MotionEvent event) {
+        Log.d(DEBUG_TAG, "onDoubleTapEvent: " + event.toString());
+        return true;
+    }
+
+    @Override
+    public boolean onSingleTapConfirmed(MotionEvent event) {
+        Log.d(DEBUG_TAG, "onSingleTapConfirmed: " + event.toString());
+        return true;
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        int si = 6;
         int px = (int) event.getX();
         int py = (int) event.getY();
-
+        int e = event.getAction();
         if(event.getAction() == MotionEvent.ACTION_UP) {
-            System.out.println("Touch at "+px+","+py);
+            if(px<ButtonSize && py>ImageHeight-ButtonSize) {
+                System.out.println("ZOOM OUT");
+                ZoomLevel--;
+            } else if (px > ImageWidth-ButtonSize && py > ImageHeight-ButtonSize) {
+                System.out.println("ZOOM IN");
+                ZoomLevel++;
+            } else {
+                System.out.println("Touch at " + px + "," + py);
+                OffsetX += 8 / Math.pow(2, ZoomLevel) * ((px - ImageWidth / 2.0) / ImageWidth);
+                OffsetY += 8 / Math.pow(2, ZoomLevel) * ((py - ImageHeight / 2.0) / ImageHeight);
+            }
+        } else {
+            return true;
         }
 
-        Point point = new Point();
-        point.x = (int)event.getX();
-        point.y = (int)event.getY();
+        createBitmap();
 
-        double MinRe = -2.0;
-        double MaxRe = 1.0;
-        double MinIm = -1.2;
-        double MaxIm = MinIm+(MaxRe-MinRe)*ImageHeight/ImageWidth;
+        System.out.println("Calculations Ending");
+
+        invalidate();
+        return true;
+    }
+
+
+    public boolean createBitmap() {
+        double ScaleFactor = 2.0/Math.pow(2,ZoomLevel-1);
+        double MinRe = (-16.0/9.0)*ScaleFactor + (16.0/9.0)*OffsetX;
+        double MaxRe = (16.0/9.0)*ScaleFactor + (16.0/9.0)*OffsetX;
+        double MinIm = (-1.0)*ScaleFactor + OffsetY;
+        double MaxIm = (1.0)*ScaleFactor + OffsetY;
+        //double MaxIm = MinIm+(MaxRe-MinRe)*ImageHeight/ImageWidth;
         double Re_factor = (MaxRe-MinRe)/(ImageWidth-1);
         double Im_factor = (MaxIm-MinIm)/(ImageHeight-1);
-        int MaxIterations = 200;
 
         System.out.println("Calculations Starting");
-        for(int y=0; y<ImageWidth; ++y)
+        frame = Bitmap.createBitmap(ImageWidth,ImageHeight,Bitmap.Config.ARGB_8888);
+
+        for(int x=0; x<ImageWidth; ++x)
         {
-            double c_im = MaxIm - y*Im_factor;
-            for(int x=0; x<ImageHeight; ++x)
+            double c_re = MaxRe - (ImageWidth-x)*Re_factor;
+            //double c_im = MaxIm - x*Im_factor;
+            for(int y=0; y<ImageHeight; ++y)
             {
-                double c_re = MinRe + x*Re_factor;
+                //double c_re = MinRe + y*Re_factor;
+                double c_im = MinIm + y*Im_factor;
 
                 double Z_re = c_re, Z_im = c_im;
                 boolean isInside = true;
@@ -135,12 +232,7 @@ public class MyView extends View {
                     double Z_re2 = Z_re*Z_re, Z_im2 = Z_im*Z_im;
                     if(Z_re2 + Z_im2 > 4)
                     {
-
-                        results[x][y] = (float)Math.sqrt((float)n/(float)MaxIterations);
-                        if(x%100==0 && y%100==0) {
-                            System.out.println(x+","+y+" is "+results[x][y]+" done by "+Z_re2+" and "+Z_im2);
-                            results[x][y] =0.1f;
-                        }
+                        results[x][y] = n;
                         isInside = false;
                         break;
                     }
@@ -148,16 +240,13 @@ public class MyView extends View {
                     Z_re = Z_re2 - Z_im2 + c_re;
                 }
                 if(isInside) {
-                    results[x][y]=1f;
+                    results[x][y]=MaxIterations-1;
+                    frame.setPixel(x,y, Color.BLACK);
+                } else {
+                    frame.setPixel(x,y, colors.get(results[x][y]));
                 }
             }
         }
-        System.out.println("Calculations Ending");
-        System.out.println("ImageWidth: " + ImageWidth);
-        System.out.println("ImageHeight: " + ImageHeight);
-        invalidate();
         return true;
     }
-
-
 }
