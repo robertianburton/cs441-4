@@ -15,7 +15,6 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.FloatMath;
 import android.util.Log;
-import android.util.TimingLogger;
 import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -36,7 +35,6 @@ public class MyView extends View implements GestureDetector.OnGestureListener, G
     private float mTextWidth;
     private float mTextHeight;
     Paint graphPaint = new Paint();
-    TimingLogger timings = new TimingLogger("MyTag", "methodA");
     Bitmap frame = Bitmap.createBitmap(1080,1920,Bitmap.Config.ARGB_8888);
 
     DisplayMetrics displayMetrics;
@@ -44,7 +42,7 @@ public class MyView extends View implements GestureDetector.OnGestureListener, G
     int ImageWidth;
     int[][] results;
     int MaxIterations = 500;
-    ArrayList<Integer> colors;
+    int[] colors;
     double ZoomLevel = 1;
     double OffsetX = 0.0;
     double OffsetY = 0.0;
@@ -84,14 +82,15 @@ public class MyView extends View implements GestureDetector.OnGestureListener, G
         ImageHeight = displayMetrics.heightPixels;
         ImageWidth = displayMetrics.widthPixels;
         results = new int[ImageWidth][ImageHeight];
-        timings.reset();
+        ButtonSize = ImageHeight/5;
 
-        colors = new ArrayList<>();
+        colors = new int[MaxIterations];
         float[] hsv = new float[]{0f,1.0f,1.0f};
 
         for(int i = 0; i < MaxIterations; i++) {
             hsv[0] = ((float)Math.cbrt(((float)i) / (float)MaxIterations) * 3600.0f)%360 ;
-            colors.add(Color.HSVToColor(hsv));
+
+            colors[i] = Color.HSVToColor(hsv);
         }
 
         createBitmap();
@@ -213,23 +212,32 @@ public class MyView extends View implements GestureDetector.OnGestureListener, G
         double Re_factor = (MaxRe-MinRe)/(ImageWidth-1);
         double Im_factor = (MaxIm-MinIm)/(ImageHeight-1);
 
+        int[] pixels = new int[ImageWidth*ImageHeight];
+
+
         System.out.println("Calculations Starting");
         frame = Bitmap.createBitmap(ImageWidth,ImageHeight,Bitmap.Config.ARGB_8888);
 
-        for(int x=0; x<ImageWidth; ++x)
+        double c_re, c_im, Z_re, Z_im, Z_re2, Z_im2;
+        boolean isInside;
+        int myblack = 0xFF000000;
+        int x, y, n;
+        for(x=0; x<ImageWidth; ++x)
         {
-            double c_re = MaxRe - (ImageWidth-x)*Re_factor;
+            c_re = MaxRe - (ImageWidth-x)*Re_factor;
             //double c_im = MaxIm - x*Im_factor;
-            for(int y=0; y<ImageHeight; ++y)
+            for(y=0; y<ImageHeight; ++y)
             {
                 //double c_re = MinRe + y*Re_factor;
-                double c_im = MinIm + y*Im_factor;
+                c_im = MinIm + y*Im_factor;
 
-                double Z_re = c_re, Z_im = c_im;
-                boolean isInside = true;
-                for(int n=0; n<MaxIterations; ++n)
+                Z_re = c_re;
+                Z_im = c_im;
+                isInside = true;
+                for(n=0; n<MaxIterations; ++n)
                 {
-                    double Z_re2 = Z_re*Z_re, Z_im2 = Z_im*Z_im;
+                    Z_re2 = Z_re*Z_re;
+                    Z_im2 = Z_im*Z_im;
                     if(Z_re2 + Z_im2 > 4)
                     {
                         results[x][y] = n;
@@ -240,13 +248,16 @@ public class MyView extends View implements GestureDetector.OnGestureListener, G
                     Z_re = Z_re2 - Z_im2 + c_re;
                 }
                 if(isInside) {
-                    results[x][y]=MaxIterations-1;
-                    frame.setPixel(x,y, Color.BLACK);
+                    /*results[x][y]=MaxIterations-1;
+                    frame.setPixel(x,y, Color.BLACK);*/
+                    pixels[x + ImageWidth*y] = myblack;
                 } else {
-                    frame.setPixel(x,y, colors.get(results[x][y]));
+                    /*frame.setPixel(x,y, colors.get(results[x][y]));*/
+                    pixels[x + ImageWidth*y] = colors[results[x][y]];
                 }
             }
         }
+        frame.setPixels(pixels, 0, ImageWidth, 0, 0, ImageWidth, ImageHeight);
         return true;
     }
 }
